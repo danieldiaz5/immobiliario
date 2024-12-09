@@ -1,0 +1,169 @@
+import streamlit as st
+import pandas as pd
+from pathlib import Path
+import base64
+import joblib
+from PIL import Image
+import os
+import json
+import pickle
+
+# Función para agregar la imagen de fondo
+def add_bg_from_local(image_file):
+    with open(image_file, "rb") as image_file:
+        encoded_string = base64.b64encode(image_file.read()).decode()
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background-image: url(data:image/jpeg;base64,{encoded_string});
+            background-size: cover;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+# Cargar el modelo desde el archivo .pkl
+def load_model(file_path):
+    model = joblib.load(file_path)
+    return model
+
+# Procesar el arreglo JSON y predecir usando el modelo
+def predict(json_data, model):
+    # Convertir JSON a DataFrame
+    df = pd.DataFrame(json_data['variables'], index=[0])
+    # Realizar la predicción
+    prediction = model.predict(df)
+    return prediction
+
+# CSS para cambiar el color de fondo 
+page_bg_color = """ 
+            <style> 
+            body { 
+                background-color: #ADD8E6; 
+                } 
+            </style> 
+            """ 
+
+# Agregar el CSS a la aplicación 
+st.markdown(page_bg_color, unsafe_allow_html=True)
+
+
+# Ruta a tu imagen de fondo
+# img_path = Path("data/casa1.jpg")
+img_path = Path("data/data.jpg")
+
+# st.markdown("<h1 style='text-align: center;'>ML INMOBILIARIO</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>INMOBILIARIO IA</h1>", unsafe_allow_html=True)
+
+
+
+# Define la ruta de la imagen
+image_path = Path(img_path)
+
+# Verifica que el archivo existe
+if image_path.is_file():
+    # Despliega la imagen con una leyenda
+    st.image(image_path.as_posix(), caption='Casa', use_container_width=True)
+else:
+    st.write("El archivo de imagen no se encontró.")
+    
+
+
+# Entrada de datos
+st.write("Introduce los valores de tus variables:")
+
+
+# col1, col2 = st.columns(2)
+
+
+# with col1:
+#     # var_dummy_1 = st.selectbox('Selecciona la opción para var_dummy_1', [0, 1])
+#     # var_dummy_2 = st.selectbox('Selecciona la opción para var_dummy_2', [0, 1])
+#     var_1 = st.number_input('Valor 1',min_value=0)
+#     var_3 = st.number_input("Valor 3",min_value=0)
+
+# with col2:
+#     var_2 = st.number_input('Valor 2',min_value=0)
+#     var_4 = st.text_input('Ingrese las carácteristicas de la casa:')
+    
+
+
+# Crear un DataFrame con las entradas del usuario
+# input_data = pd.DataFrame({
+#     'var_1': [var_1],
+#     'var_2': [var_2],
+#     'var_3': [var_3],
+#     'var_4': [var_4],
+    
+# })
+
+# Entrada de texto para el arreglo JSON 
+json_input = st.text_area('Ingresa el arreglo JSON aquí',{})
+
+
+# Hacer una predicción
+# if st.button("Predecir"):
+#     # prediction = model.predict(input_data)
+#     # st.write(f"Predicción: {prediction}")
+#     st.write("Predicion")
+
+# Cargar el modelo
+model = load_model('src/models/model_C=0.9.bin')  
+
+if st.button('Procesar'):
+    try:
+        # Parsear el JSON
+        data = json.loads(json_input)
+        result = predict(data, model)
+        st.success(f'Predicción: {result}')
+    except json.JSONDecodeError:
+        st.error('Error al procesar el JSON. Asegúrate de que el formato es correcto.')
+    except Exception as e:
+        st.error(f'Error al predecir: {e}')
+
+    
+
+
+
+
+# Directorio donde se almacenarán las imágenes
+upload_dir = "data/"
+if not os.path.exists(upload_dir):
+    os.makedirs(upload_dir)
+
+
+# Cargar una imagen desde el disco local 
+uploaded_file = st.file_uploader("Elige una imagen", type=["png", "jpg", "jpeg"]) 
+
+
+# Almacenar la imagen si se ha cargado un archivo válido
+if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+    image_path = os.path.join(upload_dir, uploaded_file.name)
+    image.save(image_path)
+    st.success(f"Imagen almacenada en: {image_path}")
+
+
+
+# HTML y CSS para la marca "Powered by" 
+
+powered_by = """ <div style="position: fixed; 
+                bottom: 0; 
+                right: 0; 
+                width: 100%; 
+                background-color: #f8f9fa; 
+                text-align: right; 
+                padding: 10px 20px; 
+                font-size: 12px; 
+                color: #6c757d;"> 
+                Powered by <a href="https://sites.google.com/view/epsilon-data/" 
+                target="_blank">[Epsilon Data]</a> 
+                </div> """ 
+
+# Agregar el HTML a la aplicación 
+st.markdown(powered_by, unsafe_allow_html=True)
+
+
+
